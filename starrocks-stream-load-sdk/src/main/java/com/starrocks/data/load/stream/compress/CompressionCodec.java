@@ -47,7 +47,9 @@ public interface CompressionCodec {
         }
 
         if (LZ4FrameCompressionCodec.NAME.equalsIgnoreCase(compressionType.get())) {
-            return Optional.of(LZ4FrameCompressionCodec.create(properties));
+            if (dataFormat instanceof StreamLoadDataFormat.JSONFormat) {
+                return Optional.of(LZ4FrameCompressionCodec.create(properties));
+            }
         }
 
         throw new UnsupportedOperationException(

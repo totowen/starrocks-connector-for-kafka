@@ -36,12 +36,7 @@ public class LZ4FrameCompressionCodecTest extends CompressionCodecTestBase {
     protected byte[] decompress(byte[] compressedData, int rawSize) throws Exception {
         byte[] result = new byte[rawSize];
         LZ4FrameInputStream inputStream = new LZ4FrameInputStream(new ByteArrayInputStream(compressedData));
-        int totalRead = 0;
-        int n = inputStream.read(result, totalRead, rawSize - totalRead);
-        while (n > 0) {
-            totalRead += n;
-            n = inputStream.read(result, totalRead, rawSize - totalRead);
-        }
+        inputStream.read(result);
         inputStream.close();
         return result;
     }

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.starrocks.data.load.stream.exception.StreamLoadFailException;
 import com.starrocks.data.load.stream.properties.StreamLoadProperties;
+import com.starrocks.data.load.stream.properties.StreamLoadTableProperties;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -293,50 +294,15 @@ public class DefaultStreamLoader implements StreamLoader, Serializable {
                         .setExpectContinueEnabled(true)
                         .setRedirectsEnabled(true)
                         .build());
-            
-            // 添加额外的Stream Load参数
-            Map<String, String> headers = new HashMap<>(region.getHeaders());
-            
-            // 获取字段映射信息
-            Map<String, String> columnMapping = region.getColumnMapping();
-            if (columnMapping != null && !columnMapping.isEmpty()) {
-                // 构建 columns 参数
-                StringBuilder columnsBuilder = new StringBuilder();
-                boolean first = true;
-                for (Map.Entry<String, String> entry : columnMapping.entrySet()) {
-                    if (!first) {
-                        columnsBuilder.append(",");
-                    }
-                    columnsBuilder.append(entry.getValue());
-                    first = false;
-                }
-                headers.put("columns", columnsBuilder.toString());
-                
-                // 构建 jsonpaths 参数
-                StringBuilder jsonPathsBuilder = new StringBuilder("[");
-                first = true;
-                for (String sourceField : columnMapping.keySet()) {
-                    if (!first) {
-                        jsonPathsBuilder.append(",");
-                    }
-                    jsonPathsBuilder.append("\"$.").append(sourceField).append("\"");
-                    first = false;
-                }
-                jsonPathsBuilder.append("]");
-                headers.put("jsonpaths", jsonPathsBuilder.toString());
-                
-                // 添加其他必要的参数
-                headers.put("strip_outer_array", "true");
-                headers.put("fuzzy_parse", "true");
-            }
-            
-            // 设置headers
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
+            httpPut.setEntity(region.getHttpEntity());
+
+            httpPut.setHeaders(defaultHeaders);
+            StreamLoadTableProperties tableProperties = region.getProperties();
+            for (Map.Entry<String, String> entry : tableProperties.getProperties().entrySet()) {
+                httpPut.removeHeaders(entry.getKey());
                 httpPut.addHeader(entry.getKey(), entry.getValue());
             }
-            
-            httpPut.setEntity(region.getHttpEntity());
-            httpPut.setHeaders(defaultHeaders);
+
             httpPut.addHeader("label", label);
 
             log.info("Stream loading, label : {}, region : {}, request : {}", label, region.getUniqueKey(), httpPut);
